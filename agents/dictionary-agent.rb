@@ -1,26 +1,30 @@
 require 'rubygems'
 require 'blather/client'
 require 'json'
+require 'nokogiri'
 require 'rest_client'
 require 'uri'
 
 # CONFIGURATION
 
-jid = 'tester@proto.encorelab.org'
-password = "foofoo"
+
+name = 'dictionary'
+password = "encore"
 chatroom = "s3@conference.proto.encorelab.org"
 
-setup(jid, password)
+# connect as component
+setup(name, password, "proto.encorelab.org", 5275)
 
 # LOGIC
 
 when_ready do
   puts "Joining room..."
   pres = Blather::Stanza::Presence::Status.new
-  pres.to = chatroom+"/"+jid
+  pres.to = chatroom+"/"+name
   pres.state = :chat
   
   client.write(pres)
+  setword("what")
 end
 
 message :groupchat?, :body do |m|
@@ -28,15 +32,17 @@ message :groupchat?, :body do |m|
     puts "got message from myself"
   else
     begin
-      msg = JSON.parse(m.body)
-      if msg['type'] == 'setword'
+      msg = Nokogiri::XML.parse(m.body)
+      if msg['event'] == 'setword'
         word = msg['content']
         setword(word)
+      elsif msg['event']
+        puts "ignoring event #{msg['event']}"
       else
-        puts "ignoring message type #{msg['type']}"
+        puts "ignoring non-event message: #{m.body}"
       end
-    rescue JSON::ParserError
-      puts "ignoring non-JSON message"
+    rescue => e
+      puts "error while parsing message: #{e} --> #{m.body}"
     end
   end
 end
@@ -74,12 +80,14 @@ def fetch_definition_for_word(word)
     return :too_long
   end
   
-  puts "Looking up #{word}..."
+  puts "Looking up #{word.inspect}..."
   
   dfn_json = RestClient.get "http://www.google.com/dictionary/json?callback=dict_api.callbacks.id100&q=#{URI.escape(word)}&sl=en&tl=en"
   dfn_json.gsub!('dict_api.callbacks.id100(','')
   dfn_json.gsub!(',200,null)','')
   dfn = JSON.parse(dfn_json)
+  
+  puts "Got #{dfn['primaries'].size} definitions for #{word.inspect}"
   
   if dfn['primaries']
     return dfn['primaries'].first['entries'].find{|ent| ent['type'] == 'meaning'}['terms'].first['text']

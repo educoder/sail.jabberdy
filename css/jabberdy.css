@@ -1,0 +1,41 @@
+#join {
+  width: 300px;
+  margin: auto;
+  padding: 12px;
+  text-align: center;
+}
+
+#guess-panel {
+  position: absolute;
+  bottom: 0px;
+  left: 25%;
+  right: 25%;
+  padding:10px;
+  text-align: center;
+  border-bottom: none;
+}
+
+#guess {
+  font-size: 150%;
+  text-align: center;
+}
+
+#set-word-panel {
+  width: 300px;
+  margin: auto;
+  padding: 12px;
+  text-align: center;
+}
+
+#connecting {
+  position: absolute;
+  top: 40%;
+  left: 40%;
+  right: 40%;
+  text-align: center;
+  font-weight: bold;
+}
+
+#username {
+  font-weight: bold;
+}
