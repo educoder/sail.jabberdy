@@ -1,43 +1,47 @@
 require 'rubygems'
-require 'blather/client'
+require 'blather/clienti/dsl'
 require 'json'
-require 'nokogiri'
+#require 'nokogiri'
+require 'xmlsimple'
 require 'rest_client'
 require 'uri'
 
 # CONFIGURATION
 
 
-name = 'dictionary'
-password = "encore"
-chatroom = "s3@conference.proto.encorelab.org"
+@nick = 'dictionary'
+@password = "encore"
+@channel = "s3@conference.proto.encorelab.org"
+@groupchat_jid = @channel + "/" + @nick
 
 # connect as component
-setup(name, password, "proto.encorelab.org", 5275)
+setup(@nick, @password, "proto.encorelab.org", 5275)
 
 # LOGIC
 
 when_ready do
-  puts "Joining room..."
+
   pres = Blather::Stanza::Presence::Status.new
-  pres.to = chatroom+"/"+name
+  pres.to = @groupchat_jid
   pres.state = :chat
   
+  puts "Joining room #{@groupchat_jid.inspect}..."
+
   client.write(pres)
-  setword("what")
+  set_word("golem")
 end
 
 message :groupchat?, :body do |m|
-  if m.from == chatroom+"/"+jid
+  if m.from == @groupchat_jid
     puts "got message from myself"
   else
     begin
-      msg = Nokogiri::XML.parse(m.body)
-      if msg['event'] == 'setword'
+      msg = XmlSimple.xml_in(m.body)
+      if msg['type'] == 'set-word'
         word = msg['content']
-        setword(word)
-      elsif msg['event']
-        puts "ignoring event #{msg['event']}"
+        set_word(word)
+      elsif msg['type']
+        puts "ignoring event #{msg['type']}"
       else
         puts "ignoring non-event message: #{m.body}"
       end
@@ -47,10 +51,18 @@ message :groupchat?, :body do |m|
   end
 end
 
+presence do |p|
+  puts p.inspect
+end
+
+iq do |q|
+  puts q.inspect
+end
+
 
 #### helpers
 
-def setword(word)
+def set_word(word)
   dfn = fetch_definition_for_word(word)
 
   if dfn == :too_long
@@ -58,21 +70,15 @@ def setword(word)
   elsif dfn == :no_definition
     puts err = "no definitions found for #{word.inspect}"
   else
-    out = {'type' => 'definition', 'content' => dfn}
+    ev = sail_event('new-definition', dfn)
     puts "Definition is: #{dfn}"
   end
   
   if err
-    out = {'type' => 'error', 'content' => err}
+    ev = sail_event('error', err)
   end
 
-  m2 = Blather::Stanza::Message.new
-
-  m2.to = "s3@conference.proto.encorelab.org"
-  m2.body = out.to_json
-  m2.type = "groupchat"
-
-  client.write(m2)
+  client.write(ev)
 end
 
 def fetch_definition_for_word(word)
@@ -90,8 +96,23 @@ def fetch_definition_for_word(word)
   puts "Got #{dfn['primaries'].size} definitions for #{word.inspect}"
   
   if dfn['primaries']
-    return dfn['primaries'].first['entries'].find{|ent| ent['type'] == 'meaning'}['terms'].first['text']
+    candidates = dfn['primaries'].first['entries'].find{|ent| ent['type'] == 'meaning'}['terms']
+    # use the first definition that doesn't include the word
+    return candidates.find{|term| !term['text'].include?(word)}['text']
   else
     return :no_definition
   end
+end
+
+
+def sail_event(type, content, format)
+  h = {'type' => type, 'content' => content}
+  xml = XmlSimple.xml_out(h, :RootName => 'event')
+
+  msg = Blather::Stanza::Message.new
+  msg.to = @channel
+  msg.type = :groupchat
+  msg.body = xml
+
+  return msg
 end
