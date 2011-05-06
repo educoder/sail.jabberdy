@@ -13,12 +13,13 @@
   padding: 10px;
   text-align: center;
   border-bottom: none;
+  z-index: 100;
 }
 
 #guess {
   font-size: 150%;
   text-align: center;
-  width: 90%;
+  width: 70%;
 }
 
 #set-word-panel {
@@ -28,11 +29,12 @@
   right: 25%;
   padding: 10px;
   text-align: center;
+  z-index: 100;
 }
 
 #set-word {
   font-size: 150%;
-  width: 90%;
+  width: 70%;
   text-align: center;
 }
 
@@ -76,7 +78,7 @@
   right: 10px;
   top: 60px;
   bottom: 100px;
-  z-index: 1000;
+  z-index: 99;
 }
 
 .guess-baloon {
@@ -85,6 +87,10 @@
   border-radius: 15px;
   background-color: rgba(256,256,256,0.7);
   box-shadow: rgba(0,0,128,0.25) 3px 3px 4px;
+}
+
+.guess-baloon:hover {
+  cursor: pointer;
 }
 
 .guess-baloon .word {
@@ -98,4 +104,8 @@
   font-size: 14pt;
   text-align: right;
   font-weight: bold;
+}
+
+input.in-progress {
+  background: url(/loader.gif) no-repeat 2px 2px white;
 }

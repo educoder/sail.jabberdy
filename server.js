@@ -19,7 +19,7 @@ var server = http.createServer(function (req, res) {
         console.log("PROXY "+req.url)
         proxy.proxyRequest(req, res, {
             host: 'proto.encorelab.org',
-            port: 7070
+            port: 5280
         })
     }
     

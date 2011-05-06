@@ -1,6 +1,3 @@
-if (!window.console)
-    window.console = { log: function () {} }
-
 Jabberdy = {
     rollcallURL: 'http://rollcall.proto.encorelab.org',
     xmppDomain: 'proto.encorelab.org',
@@ -86,13 +83,15 @@ Jabberdy = {
     },
     
     submitGuess: function() {
+        $('#guess').addClass('in-progress')
         word = $('#guess').val()
         ev = new Sail.Event('guess', {word: word})
         Jabberdy.groupchat.sendEvent(ev)
-        //$('#guess').attr('disabled', true)
+        $('#guess').attr('disabled', true)
     },
     
     setNewWord: function() {
+        $('#set-word').addClass('in-progress')
         word = $('#set-word').val()
         ev = new Sail.Event('set_word', {word: word})
         Jabberdy.groupchat.sendEvent(ev)
@@ -105,6 +104,7 @@ Jabberdy = {
         $('#set-word-panel').hide()
         $('#winner').hide()
         $('#definition').show()
+        $('#guess').removeClass('in-progress')
         
         $('#guess').attr('disabled', false) // just in case...
         
@@ -118,17 +118,20 @@ Jabberdy = {
     },
     
     setDefinition: function(definition) {
+        $('#set-word').removeClass('in-progress')
         $('#definition').text(definition)
         Jabberdy.switchToGuessingMode()
     },
     
     wrongGuess: function(definition) {
+        $('#guess').removeClass('in-progress')
         $('#guess-container').effect('shake', {duration: 50, distance: 5}, function() {
             $('#guess').val('').attr('disabled', false).focus()
         })
     },
     
     badWord: function(message) {
+        $('#set-word').removeClass('in-progress')
         alert(message)
         $('#set-word').val('').attr('disabled', false).focus()
     },
@@ -136,11 +139,14 @@ Jabberdy = {
     showGuess: function(from, word) {
         player = from.split('/')[1].split('@')[0]
         baloon = $("<div class='guess-baloon'><div class='word'>"+word+"</div><div class='player'>"+player+"</div></div>")
+        baloon.hide()
         field_height = $("#field").height()
         field_width = $("#field").width()
         baloon.css('left', (Math.random() * (field_width - 100) + 'px'))
         baloon.css('top', (Math.random() * (field_height - 100) + 'px'))
         $("#field").append(baloon)
+        baloon.show('puff', 'fast')
+        baloon.draggable()
     },
     
     announceWinner: function(ev) {
@@ -151,7 +157,7 @@ Jabberdy = {
                     'fast')
         $('#definition').hide('puff', 'fast')
         $('#winner-username').text(winner)
-        $('#winner').show()//'drop', {easing: 'easyOutBounce'}, 'fast')
+        $('#winner').show('pulsate', 'normal')//'drop', {easing: 'easyOutBounce'}, 'fast')
         if (ev.winner == Jabberdy.groupchat.jid()) {
             Jabberdy.askForNewWord()
         }

@@ -29,6 +29,13 @@ class Dictionary < Sail::Agent
       set_word(word, stanza.from)
     end
     
+    message :error? do |err|
+      puts "\n\n\n"
+      puts "!" * 80
+      puts "GOT ERROR MESSAGE: #{err.inspect}"
+      puts "!" * 80
+    end
+    
     disconnected do
       # automatically reconnect
       puts "DISCONNECTED!"

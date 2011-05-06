@@ -55,7 +55,7 @@
         <form id="guess-form"> 
             <label for="guess" style="font-size: 70%">Your Guess:</label>
             <div id="guess-container">
-                <input type="text" id="guess"></input>
+                <input type="text" id="guess" />
             </div>
             <span style="font-size: 60%">(press enter to submit)</span>
         </form>
@@ -64,9 +64,9 @@
     <div id="set-word-panel" class="widget-box" style="display: none">
         <form id="set-word-form"> 
             <label for="set-word">You must set a new word!</label>
-            <br />
-            <input type="text" id="set-word"></input>
-            <br />
+            <div id="set-word-container">
+                <input type="text" id="set-word" />
+            </div>
             <span style="font-size: 60%">(press enter to submit)</span>
         </form>
     </div>
