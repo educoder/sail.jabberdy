@@ -2,7 +2,6 @@ require 'rubygems'
 require 'blather/client/dsl'
 require 'json'
 #require 'nokogiri'
-require 'json'
 require 'rest_client'
 require 'uri'
 
