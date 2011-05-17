@@ -1,37 +1,45 @@
 Jabberdy = {
+    // config
+    
     rollcallURL: 'http://rollcall.proto.encorelab.org',
     xmppDomain: 'proto.encorelab.org',
     groupchatRoom: 's3@conference.proto.encorelab.org',
+    
+    
+    // private global vars
     
     ui: Sail.UI,
     groupchat: null,
     session: null,
     justWatching: false,
     
+    
+    // initialization (called in $(document).ready() at the bottom of this file)
+    
     init: function() {
-        Jabberdy.setupUI()
+        console.log("Initializing Jabberdy...")
+        
+        // create custom event handlers for all Jabberdy 'on' methods
+        Sail.autobindEvents(Jabberdy, {
+            pre: function() {console.debug(arguments[0].type+'!',arguments)}
+        })
+        
+        $('#play').click(function() {$(Jabberdy).trigger('choseToPlay')})
+        $('#watch').click(function() {$(Jabberdy).trigger('choseToWatch')})
+        
+        $('#guess-form').submit(function() {Jabberdy.submitGuess(); return false})
+        
+        $('#set-word-form').submit(function () {Jabberdy.setNewWord(); return false})
         
         $('#connecting').show()
-   
-        Jabberdy.authenticate(Jabberdy.join)
-    },
-    
-    authenticate: function(onSuccess) {
-        Jabberdy.rollcall = new Sail.Rollcall.Client(Jabberdy.rollcallURL)
-        Jabberdy.token = Jabberdy.rollcall.getCurrentToken()
-
-        if (!Jabberdy.token) {
-          Jabberdy.rollcall.redirectToLogin()
-          return
-        }
         
-        Jabberdy.rollcall.fetchSessionForToken(Jabberdy.token, function(data) {
-            Jabberdy.session = data.session
-            onSuccess()
-        })
+        Jabberdy.authenticate()
     },
     
-    join: function() {
+
+    /** EVENT HANDLERS **/
+    
+    onAuthenticated: function() {
         session = Jabberdy.session
         console.log("Authenticated as: ", session.user.username, session.user.encrypted_password)
         
@@ -48,60 +56,150 @@ Jabberdy = {
       	    Jabberdy.groupchat.addHandler(Jabberdy.handleSailEvent)
       	    
       	    $('#connecting').hide()
-      	    Jabberdy.chooseWatchOrPlay()
+      	    $(Jabberdy).trigger('joined')
       	}
       	
       	Sail.Strophe.connect()
     },
     
-    chooseWatchOrPlay: function() {
+    onJoined: function() {
+        $(Jabberdy).trigger('choosingWhetherToWatchOrPlay')
         Jabberdy.ui.showDialog('#join-dialog')
     },
     
+    onChoseToPlay: function() {
+        Jabberdy.justWatching = false
+        Jabberdy.askForNewWord()
+    },
+    
+    onChoseToWatch: function() {
+       Jabberdy.justWatching = true 
+    },
+    
+    onSubmittedGuess: function() {
+        $('#guess').attr('disabled', true)
+    },
+    
+    onSubmittedNewWord: function() {
+        $('#set-word').attr('disabled', true)
+        $('#winner').hide()
+    },
+    
+    onGotNewDefinition: function(ev, sev) {
+        definition = sev.definition
+        $('#set-word').removeClass('in-progress')
+        $('#definition').text(definition)
+        Jabberdy.switchToGuessingMode()
+    },
+    
+    onGotWrongGuess: function(ev, sev) {
+        definition = sev.definition
+        $('#guess').removeClass('in-progress')
+        $('#guess-container').effect('shake', {duration: 50, distance: 5}, function() {
+            $('#guess').val('').attr('disabled', false).focus()
+        })
+    },
+    
+    onGotBadWord: function(ev, sev) {
+        message = sev.message
+        $('#set-word').removeClass('in-progress')
+        alert(message)
+        $('#set-word').val('').attr('disabled', false).focus()
+    },
+    
+    onGotGuess: function(ev, sev, from) {
+        word = sev.word
+        player = sev.from.split('/')[1].split('@')[0]
+        baloon = $("<div class='guess-baloon'><div class='word'>"+word+"</div><div class='player'>"+player+"</div></div>")
+        baloon.hide()
+        field_height = $("#field").height()
+        field_width = $("#field").width()
+        baloon.css('left', (Math.random() * (field_width - 100) + 'px'))
+        baloon.css('top', (Math.random() * (field_height - 100) + 'px'))
+        $("#field").append(baloon)
+        baloon.show('puff', 'fast')
+        baloon.draggable()
+    },
+    
+    onGotWinner: function(ev, sev) {
+        winner = sev.winner.split('/')[1].split('@')[0]
+        $('.guess-baloon').remove()
+        $('#guess-panel').hide('slide',
+                    {easing: 'swing', direction: 'down'},
+                    'fast')
+        $('#definition').hide('puff', 'fast')
+        $('#winner-username').text(winner)
+        $('#winner').show('pulsate', 'normal')//'drop', {easing: 'easyOutBounce'}, 'fast')
+        if (sev.winner == Jabberdy.groupchat.jid()) {
+            // you are the winner!
+            Jabberdy.askForNewWord()
+        }
+    },
+    
+    handleSailEvent: function(stanza) {
+        msg = $(stanza)
+        
+        body = $(msg).children('body').text()
+        sev = null
+        try {
+            sev = JSON.parse(body)
+        } catch(err) {
+            console.log("couldn't parse message, ignoring: "+err)
+            return
+        }
+        
+        if (msg.attr('from') == Jabberdy.groupchat.jid() && sev.type != 'guess') {
+            console.log("got message from myself... ignoring", msg)
+            return
+        }
+        
+        sev.from = msg.attr('from')
+        sev.to = msg.attr('to')
+        sev.stanza = stanza
+        
+        switch(sev.type) {
+            case 'guess':
+                $(Jabberdy).trigger('gotGuess', sev)
+                break
+            case 'set_definition':
+                $(Jabberdy).trigger('gotNewDefinition', sev)
+                break
+            case 'wrong':
+                $(Jabberdy).trigger('gotWrongGuess', sev)
+                break
+            case 'bad_word':
+                $(Jabberdy).trigger('gotBadWord', sev)
+                break
+            case 'win':
+                $(Jabberdy).trigger('gotWinner', sev)
+                break
+            default:
+                console.log("UNHANDLED EVENT "+sev.type, sev)
+        }
+        
+        return true
+    },
+    
+    
+    /** end of EVENT HANDLERS **/
+    
+    
     askForNewWord: function() {
+        $(Jabberdy).trigger('enteringNewWord')
         Jabberdy.ui.showDialog('#set-word-panel')
-    },
-    
-    setupUI: function() {
-        console.log("Jabberdy: setting up UI...")
         
-        $('#play').click(Jabberdy.askForNewWord)
-        $('#watch').click(function() { Jabberdy.justWatching = true })
-        
-        $('#guess-form').submit(function() {Jabberdy.submitGuess(); return false})
-        
-        $('#set-word-form').submit(function () {Jabberdy.setNewWord(); return false})
-    },
-    
-    askForNewWord: function() {
         $('#set-word').attr('disabled', false)
         $('#guess-panel').hide()
         $('#set-word-panel').show('puff',
             { easing: 'swing' },
             'slow',
-            function() {$('#set-word').val('').focus()})
-    },
-    
-    submitGuess: function() {
-        $('#guess').addClass('in-progress')
-        word = $('#guess').val()
-        ev = new Sail.Event('guess', {word: word})
-        Jabberdy.groupchat.sendEvent(ev)
-        $('#guess').attr('disabled', true)
-    },
-    
-    setNewWord: function() {
-        $('#set-word').addClass('in-progress')
-        word = $('#set-word').val()
-        ev = new Sail.Event('set_word', {word: word})
-        Jabberdy.groupchat.sendEvent(ev)
-        $('#set-word').attr('disabled', true)
-        $('#winner').hide()
+            function() { $('#set-word').val('').focus() }
+        )
     },
     
     switchToGuessingMode: function() {
         $('.guess-baloon').remove()
-        $('#set-word-panel').hide()
+        Jabberdy.ui.dismissDialog('#set-word-panel')
         $('#winner').hide()
         $('#definition').show()
         $('#guess').removeClass('in-progress')
@@ -117,93 +215,37 @@ Jabberdy = {
         }
     },
     
-    setDefinition: function(definition) {
-        $('#set-word').removeClass('in-progress')
-        $('#definition').text(definition)
-        Jabberdy.switchToGuessingMode()
+    submitGuess: function() {
+        $('#guess').addClass('in-progress')
+        word = $('#guess').val()
+        sev = new Sail.Event('guess', {word: word})
+        Jabberdy.groupchat.sendEvent(sev)
+        $(Jabberdy).trigger('submittedGuess')
     },
     
-    wrongGuess: function(definition) {
-        $('#guess').removeClass('in-progress')
-        $('#guess-container').effect('shake', {duration: 50, distance: 5}, function() {
-            $('#guess').val('').attr('disabled', false).focus()
+    setNewWord: function() {
+        $('#set-word').addClass('in-progress')
+        word = $('#set-word').val()
+        sev = new Sail.Event('set_word', {word: word})
+        Jabberdy.groupchat.sendEvent(sev)
+        $(Jabberdy).trigger('submittedNewWord')
+    },
+    
+    authenticate: function() {
+        Jabberdy.rollcall = new Sail.Rollcall.Client(Jabberdy.rollcallURL)
+        Jabberdy.token = Jabberdy.rollcall.getCurrentToken()
+
+        if (!Jabberdy.token) {
+            $(Jabberdy).trigger('authenticating')
+            Jabberdy.rollcall.redirectToLogin()
+            return
+        }
+        
+        Jabberdy.rollcall.fetchSessionForToken(Jabberdy.token, function(data) {
+            Jabberdy.session = data.session
+            $(Jabberdy).trigger('authenticated')
         })
     },
-    
-    badWord: function(message) {
-        $('#set-word').removeClass('in-progress')
-        alert(message)
-        $('#set-word').val('').attr('disabled', false).focus()
-    },
-    
-    showGuess: function(from, word) {
-        player = from.split('/')[1].split('@')[0]
-        baloon = $("<div class='guess-baloon'><div class='word'>"+word+"</div><div class='player'>"+player+"</div></div>")
-        baloon.hide()
-        field_height = $("#field").height()
-        field_width = $("#field").width()
-        baloon.css('left', (Math.random() * (field_width - 100) + 'px'))
-        baloon.css('top', (Math.random() * (field_height - 100) + 'px'))
-        $("#field").append(baloon)
-        baloon.show('puff', 'fast')
-        baloon.draggable()
-    },
-    
-    announceWinner: function(ev) {
-        $('.guess-baloon').remove()
-        winner = ev.winner.split('/')[1].split('@')[0]
-        $('#guess-panel').hide('slide',
-                    {easing: 'swing', direction: 'down'},
-                    'fast')
-        $('#definition').hide('puff', 'fast')
-        $('#winner-username').text(winner)
-        $('#winner').show('pulsate', 'normal')//'drop', {easing: 'easyOutBounce'}, 'fast')
-        if (ev.winner == Jabberdy.groupchat.jid()) {
-            Jabberdy.askForNewWord()
-        }
-    },
-    
-    handleSailEvent: function(stanza) {
-        msg = $(stanza)
-        
-        body = $(msg).children('body').text()
-        ev = null
-        try {
-            ev = JSON.parse(body)
-        } catch(err) {
-            console.log("couldn't parse message, ignoring: "+err)
-            return
-        }
-        
-        if (msg.attr('from') == Jabberdy.groupchat.jid() && ev.type != 'guess') {
-            console.log("got message from myself... ignoring", msg)
-            return
-        }
-        
-        
-        switch(ev.type) {
-            case 'guess':
-                Jabberdy.showGuess(msg.attr('from'), ev.word)
-                break
-            case 'set_definition':
-                Jabberdy.setDefinition(ev.definition)
-                break
-            case 'wrong':
-                Jabberdy.wrongGuess()
-                break
-            case 'bad_word':
-                Jabberdy.badWord(ev.message)
-                break
-            case 'win':
-                Jabberdy.announceWinner(ev)
-                break
-            default:
-                console.log("UNHANDLED EVENT "+ev.type, ev)
-        }
-        
-        return true
-    }
-    
     
 }
 
