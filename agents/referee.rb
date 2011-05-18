@@ -15,13 +15,13 @@ class Referee < Sail::Agent
       client.write(pres)
     end
   
-    event :set_word? do |stanza, ev|
-      word = ev['word']
+    event :set_word? do |stanza, payload|
+      word = payload['word']
       @current_word = word
     end
     
-    event :guess? do |stanza, ev|
-      word = ev['word']
+    event :guess? do |stanza, payload|
+      word = payload['word']
       puts "checking asnwer #{word.inspect}"
       if word == @current_word
         puts "#{word.inspect} from #{stanza.from.inspect} is right!"

@@ -8,7 +8,6 @@ require 'uri'
 $: << 'sail.rb/lib'
 require 'sail/agent'
 
-
 class Dictionary < Sail::Agent
   def prep
     setup my_jid, password, server, port
@@ -17,14 +16,15 @@ class Dictionary < Sail::Agent
       pres = Blather::Stanza::Presence::Status.new
       pres.to = my_jid_in_room
       pres.state = :chat
-
+      
       puts "Joining #{my_jid_in_room.inspect}..."
-
+      
       client.write(pres)
     end
   
-    event :set_word? do |stanza, ev|
-      word = ev['word']
+    event :set_word? do |stanza, payload|
+      puts payload.inspect
+      word = payload['word']
       set_word(word, stanza.from)
     end
     
