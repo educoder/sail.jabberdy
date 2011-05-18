@@ -100,7 +100,7 @@ Jabberdy = {
     },
     
     
-    event: {
+    events: {
         // mapping of Sail events to local Javascript events
         sail: {
             'guess': 'gotGuess',
