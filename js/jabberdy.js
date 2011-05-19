@@ -131,8 +131,8 @@ Jabberdy = {
           	    $('#connecting').hide()
           	    $(Jabberdy).trigger('joined')
           	}
-      	
-          	Sail.Strophe.connect()
+      	    
+      	    Sail.Strophe.connect()
         },
     
         onJoined: function() {
@@ -159,14 +159,14 @@ Jabberdy = {
         },
     
         onGotNewDefinition: function(ev, sev) {
-            definition = sev.definition
+            definition = sev.payload.definition
             $('#set-word').removeClass('in-progress')
             $('#definition').text(definition)
             Jabberdy.switchToGuessingMode()
         },
     
         onGotWrongGuess: function(ev, sev) {
-            definition = sev.definition
+            definition = sev.payload.definition
             $('#guess').removeClass('in-progress')
             $('#guess-container').effect('shake', {duration: 50, distance: 5}, function() {
                 $('#guess').val('').attr('disabled', false).focus()
@@ -174,14 +174,14 @@ Jabberdy = {
         },
     
         onGotBadWord: function(ev, sev) {
-            message = sev.message
+            message = sev.payload.message
             $('#set-word').removeClass('in-progress')
             alert(message)
             $('#set-word').val('').attr('disabled', false).focus()
         },
     
-        onGotGuess: function(ev, sev, from) {
-            word = sev.word
+        onGotGuess: function(ev, sev) {
+            word = sev.payload.word
             player = sev.from.split('/')[1].split('@')[0]
             baloon = $("<div class='guess-baloon'><div class='word'>"+word+"</div><div class='player'>"+player+"</div></div>")
             baloon.hide()
@@ -195,7 +195,7 @@ Jabberdy = {
         },
     
         onGotWinner: function(ev, sev) {
-            winner = sev.winner.split('/')[1].split('@')[0]
+            winner = sev.payload.winner.split('/')[1].split('@')[0]
             $('.guess-baloon').remove()
             $('#guess-panel').hide('slide',
                         {easing: 'swing', direction: 'down'},
@@ -203,7 +203,7 @@ Jabberdy = {
             $('#definition').hide('puff', 'fast')
             $('#winner-username').text(winner)
             $('#winner').show('pulsate', 'normal')//'drop', {easing: 'easyOutBounce'}, 'fast')
-            if (sev.winner == Jabberdy.groupchat.jid()) {
+            if (sev.payload.winner == Jabberdy.groupchat.jid()) {
                 // you are the winner!
                 Jabberdy.askForNewWord()
             }
