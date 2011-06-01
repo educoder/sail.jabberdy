@@ -112,14 +112,15 @@ Jabberdy = {
         
         // local Javascript event handlers
         onAuthenticated: function() {
+            debugger
             session = Jabberdy.session
-            console.log("Authenticated as: ", session.user.username, session.user.encrypted_password)
+            console.log("Authenticated as: ", session.account.login, session.account.encrypted_password)
         
-            $('#username').text(session.user.username)
+            $('#username').text(session.account.login)
         
             Sail.Strophe.bosh_url = '/http-bind/'
-         	Sail.Strophe.jid = session.user.username + '@' + Jabberdy.xmppDomain
-          	Sail.Strophe.password = session.user.encrypted_password
+         	Sail.Strophe.jid = session.account.login + '@' + Jabberdy.xmppDomain
+          	Sail.Strophe.password = session.account.encrypted_password
       	
           	Sail.Strophe.onConnectSuccess = function() {
           	    sailHandler = Sail.generateSailEventHandler(Jabberdy)
