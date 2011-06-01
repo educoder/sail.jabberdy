@@ -12,7 +12,7 @@ var url = require('url')
 var util = require('util')
 
 var proxy = new httpProxy.HttpProxy()
-var file = new(httpStatic.Server)('.')
+var file = new(httpStatic.Server)('.', {cache: false})
 
 var server = http.createServer(function (req, res) {
     if (url.parse(req.url).pathname.match(/^\/http-bind/)) {
