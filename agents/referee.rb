@@ -2,15 +2,13 @@ $: << 'sail.rb/lib'
 require 'sail/agent'
 
 class Referee < Sail::Agent
-  def prep
-    setup my_jid, password, server, port
-  
+  def vitalize
     when_ready do
       pres = Blather::Stanza::Presence::Status.new
-      pres.to = my_jid_in_room
+      pres.to = agent_jid_in_room
       pres.state = :chat
 
-      puts "Joining #{my_jid_in_room.inspect}..."
+      puts "Joining #{agent_jid_in_room.inspect}..."
 
       client.write(pres)
     end
