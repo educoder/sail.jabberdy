@@ -112,7 +112,6 @@ Jabberdy = {
         
         // local Javascript event handlers
         onAuthenticated: function() {
-            debugger
             session = Jabberdy.session
             console.log("Authenticated as: ", session.account.login, session.account.encrypted_password)
         
@@ -197,11 +196,13 @@ Jabberdy = {
     
         onGotWinner: function(ev, sev) {
             winner = sev.payload.winner.split('/')[1].split('@')[0]
+            word = sev.payload.word
             $('.guess-baloon').remove()
             $('#guess-panel').hide('slide',
                         {easing: 'swing', direction: 'down'},
                         'fast')
             $('#definition').hide('puff', 'fast')
+            $('#winning-word').text(word)
             $('#winner-username').text(winner)
             $('#winner').show('pulsate', 'normal')//'drop', {easing: 'easyOutBounce'}, 'fast')
             if (sev.payload.winner == Jabberdy.groupchat.jid()) {
