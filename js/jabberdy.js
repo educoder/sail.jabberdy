@@ -1,7 +1,6 @@
 Jabberdy = {
     // config
     
-    rollcallURL: 'http://rollcall.proto.encorelab.org',
     xmppDomain: 'proto.encorelab.org',
     groupchatRoom: 's3@conference.proto.encorelab.org',
     
@@ -84,19 +83,32 @@ Jabberdy = {
     },
     
     authenticate: function() {
-        Jabberdy.rollcall = new Sail.Rollcall.Client(Jabberdy.rollcallURL)
-        Jabberdy.token = Jabberdy.rollcall.getCurrentToken()
-
-        if (!Jabberdy.token) {
-            $(Jabberdy).trigger('authenticating')
-            Jabberdy.rollcall.redirectToLogin()
-            return
+        
+        // Jabberdy.rollcall = new Sail.Rollcall.Client(Jabberdy.rollcallURL)
+        // Jabberdy.token = Jabberdy.rollcall.getCurrentToken()
+        // 
+        // if (!Jabberdy.token) {
+        //     $(Jabberdy).trigger('authenticating')
+        //     Jabberdy.rollcall.redirectToLogin()
+        //     return
+        // }
+        // 
+        // Jabberdy.rollcall.fetchSessionForToken(Jabberdy.token, function(data) {
+        //     Jabberdy.session = data.session
+        //     $(Jabberdy).trigger('authenticated')
+        // })
+        
+        Jabberdy.username = prompt("Enter your username:")
+        
+        Jabberdy.password = prompt("Enter your password:")
+        Jabberdy.session = {
+            account: {
+                login: Jabberdy.username,
+                password: Jabberdy.password
+            }
         }
         
-        Jabberdy.rollcall.fetchSessionForToken(Jabberdy.token, function(data) {
-            Jabberdy.session = data.session
-            $(Jabberdy).trigger('authenticated')
-        })
+        $(Jabberdy).trigger('authenticated')
     },
     
     
@@ -113,13 +125,13 @@ Jabberdy = {
         // local Javascript event handlers
         onAuthenticated: function() {
             session = Jabberdy.session
-            console.log("Authenticated as: ", session.account.login, session.account.encrypted_password)
+            console.log("Authenticated as: ", session.account.login, session.account.password)
         
             $('#username').text(session.account.login)
         
             Sail.Strophe.bosh_url = '/http-bind/'
          	Sail.Strophe.jid = session.account.login + '@' + Jabberdy.xmppDomain
-          	Sail.Strophe.password = session.account.encrypted_password
+          	Sail.Strophe.password = session.account.password
       	
           	Sail.Strophe.onConnectSuccess = function() {
           	    sailHandler = Sail.generateSailEventHandler(Jabberdy)
