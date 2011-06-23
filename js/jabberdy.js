@@ -125,11 +125,15 @@ Jabberdy = {
           	    sailHandler = Sail.generateSailEventHandler(Jabberdy)
           	    Sail.Strophe.addHandler(sailHandler, null, null, 'chat')
       	    
-          	    Jabberdy.groupchat = Sail.Strophe.joinGroupchat(Jabberdy.groupchatRoom)
+          	    Jabberdy.groupchat = new Sail.Strophe.Groupchat(Jabberdy.groupchatRoom)
           	    Jabberdy.groupchat.addHandler(sailHandler)
+          	    
+          	    Jabberdy.groupchat.onSelfJoin = function(pres) {
+          	        $('#connecting').hide()
+              	    $(Jabberdy).trigger('joined')
+          	    }
       	    
-          	    $('#connecting').hide()
-          	    $(Jabberdy).trigger('joined')
+      	        Jabberdy.groupchat.join()
           	}
       	    
       	    Sail.Strophe.connect()
