@@ -218,5 +218,3 @@ Jabberdy = {
     
     
 }
-
-$(document).ready(Jabberdy.init)
