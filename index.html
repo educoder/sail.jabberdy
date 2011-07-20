@@ -13,11 +13,9 @@
     <script src="js/sail.js/sail.js" type="text/javascript"></script>
     <script type="text/javascript">
         Sail.load()
+            .then('js/sail.js/rollcall.js')
             .then('js/jabberdy.js')
-            .thenRun(function() {
-                Sail.UI.init()
-                Jabberdy.init()
-            })
+            .thenRun(function() { return Sail.init(Jabberdy) })
     </script>
 </head>
 <body> 
