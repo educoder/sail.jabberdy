@@ -200,6 +200,10 @@ Jabberdy = {
             $('#set-word').attr('disabled', true)
             $('#winner').hide()
         },
+        
+        unauthenticated: function(ev) {
+            document.location.reload()
+        }
     },
     
     
