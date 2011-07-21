@@ -22,7 +22,7 @@ Jabberdy = {
         Sail.modules
             .load('Rollcall.Authenticator', {mode: 'picker'})
             .load('Strophe.AutoConnector')
-            .load('AuthIndicator')
+            .load('AuthStatusWidget')
             .thenRun(function () {
                 Sail.autobindEvents(Jabberdy, {
                     pre: function() {console.debug(arguments[0].type+'!',arguments)}
@@ -88,22 +88,6 @@ Jabberdy = {
         sev = new Sail.Event('set_word', {word: word})
         Jabberdy.groupchat.sendEvent(sev)
         $(Jabberdy).trigger('submittedNewWord')
-    },
-    
-    authenticate: function() {
-        console.log("Authenticating...")
-        
-        Jabberdy.rollcall = new Rollcall.Client(Jabberdy.rollcallURL)
-        Jabberdy.token = Jabberdy.rollcall.getCurrentToken()
-
-        if (!Jabberdy.token) {
-            Rollcall.Authenticator.requestLogin()
-        } else {
-            Jabberdy.rollcall.fetchSessionForToken(Jabberdy.token, function(data) {
-                Jabberdy.session = data.session
-                $(Jabberdy).trigger('authenticated')
-            })
-        }
     },
     
     
