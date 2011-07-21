@@ -20,8 +20,8 @@ Jabberdy = {
         console.log("Initializing Jabberdy...")
         
         Sail.modules
+            .load('Rollcall.Authenticator', {mode: 'picker'})
             .load('Strophe.AutoConnector')
-            .load('Rollcall.LoginPicker')
             .load('AuthIndicator')
             .thenRun(function () {
                 Sail.autobindEvents(Jabberdy, {
@@ -97,20 +97,13 @@ Jabberdy = {
         Jabberdy.token = Jabberdy.rollcall.getCurrentToken()
 
         if (!Jabberdy.token) {
-            Rollcall.LoginPicker.showUserSelector()
+            Rollcall.Authenticator.requestLogin()
         } else {
             Jabberdy.rollcall.fetchSessionForToken(Jabberdy.token, function(data) {
                 Jabberdy.session = data.session
                 $(Jabberdy).trigger('authenticated')
             })
         }
-    },
-    
-    unauthenticate: function() {
-        Jabberdy.rollcall.destroySessionForToken(Jabberdy.rollcall.getCurrentToken(), function() {
-            Jabberdy.rollcall.unsetToken()
-            $(Jabberdy).trigger('unauthenticated')
-        })
     },
     
     
@@ -176,6 +169,8 @@ Jabberdy = {
         },
         
         connected: function(ev) {
+            Jabberdy.groupchat.join()
+            
             $('#username').text(session.account.login)
       	    $('#connecting').hide()
             
